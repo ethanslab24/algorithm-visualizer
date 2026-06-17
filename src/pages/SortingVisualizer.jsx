@@ -6,6 +6,9 @@ function SortingVisualizer() {
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState(500);
   const [selectedAlgorithm, setSelectedAlgorithm] = useState("bubble");
+  const [minimumIndex, setMinimumIndex] = useState(0);
+  const [currentStartIndex, setCurrentStartIndex] = useState(0);
+  const [currentIndexBeingChecked, setCurrentIndexBeingChecked] = useState(1);
 
   function generateRandomArray() {
     const nums = [];
@@ -17,6 +20,16 @@ function SortingVisualizer() {
     }
 
     return nums;
+  }
+
+  function handleStep() {
+    if (selectedAlgorithm === "bubble") {
+      bubbleSortStep();
+    }
+
+    if (selectedAlgorithm === "selection") {
+      selectionSortStep();
+    }
   }
 
   const [array, setArray] = useState(generateRandomArray());
@@ -48,7 +61,7 @@ function SortingVisualizer() {
     }
   }
 
-  function compareCurrentPair() {
+  function bubbleSortStep() {
     const leftIndex = currentlyComparing[0];
     const rightIndex = currentlyComparing[1];
 
@@ -61,11 +74,38 @@ function SortingVisualizer() {
     nextComparison();
   }
 
+  function selectionSortStep() {
+    if (isSorted) return;
+
+    if (currentIndexBeingChecked < array.length) {
+      if (array[minimumIndex] > array[currentIndexBeingChecked]) {
+        setMinimumIndex(currentIndexBeingChecked);
+      }
+
+      setCurrentIndexBeingChecked(currentIndexBeingChecked + 1);
+    } else {
+      swap(currentStartIndex, minimumIndex);
+
+      const nextStartIndex = currentStartIndex + 1;
+
+      if (nextStartIndex >= array.length - 1) {
+        setIsSorted(true);
+      }
+
+      setCurrentStartIndex(nextStartIndex);
+      setMinimumIndex(nextStartIndex);
+      setCurrentIndexBeingChecked(nextStartIndex + 1);
+    }
+  }
+
   function resetArray() {
     const newArray = generateRandomArray();
     setArray(newArray);
     setSortedBoundary(newArray.length - 1);
     setCurrentlyComparing([0, 1]);
+    setCurrentStartIndex(0);
+    setMinimumIndex(0);
+    setCurrentIndexBeingChecked(1);
     setIsRunning(false);
     setIsSorted(false);
   }
@@ -74,14 +114,70 @@ function SortingVisualizer() {
     if (!isRunning || isSorted) return;
     const delay = 1100 - speed * 100;
     const intervalId = setInterval(() => {
-      compareCurrentPair();
+      handleStep();
     }, delay);
 
     return () => clearInterval(intervalId);
-  }, [isRunning, isSorted, array, currentlyComparing, sortedBoundary, speed]);
+  }, [
+    isRunning,
+    isSorted,
+    array,
+    currentlyComparing,
+    sortedBoundary,
+    speed,
+    selectedAlgorithm,
+    minimumIndex,
+    currentStartIndex,
+    currentIndexBeingChecked,
+  ]);
+
+  function getBarColor(index) {
+    if (isSorted) return "purple";
+
+    if (selectedAlgorithm === "bubble") {
+      if (index > sortedBoundary) return "purple";
+      if (currentlyComparing.includes(index)) return "green";
+      return "steelblue";
+    }
+
+    if (selectedAlgorithm === "selection") {
+      if (index < currentStartIndex) return "purple";
+      if (index === minimumIndex) return "red";
+      if (index === currentIndexBeingChecked) return "green";
+      return "steelblue";
+    }
+
+    return "steelblue";
+  }
 
   const leftValue = array[currentlyComparing[0]];
   const rightValue = array[currentlyComparing[1]];
+
+  const algorithmDetails = {
+    bubble: {
+      title: "How Bubble Sort Works",
+      description:
+        "Bubble Sort compares neighboring values. If the left value is bigger than the right value, they swap. After each pass, the largest unsorted value moves to its final position at the end.",
+      time: "O(n²)",
+      space: "O(1)",
+    },
+    selection: {
+      title: "How Selection Sort Works",
+      description:
+        "Selection Sort searches the unsorted section for the smallest value. After finding it, the algorithm swaps it into the first unsorted position. Then the sorted section grows from left to right.",
+      time: "O(n²)",
+      space: "O(1)",
+    },
+    insertion: {
+      title: "Insertion Sort Coming Soon",
+      description:
+        "Insertion Sort will be added next. It builds a sorted section by inserting each value into its correct position.",
+      time: "O(n²)",
+      space: "O(1)",
+    },
+  };
+
+  const currentAlgorithmInfo = algorithmDetails[selectedAlgorithm];
 
   return (
     <section className="sorting-page">
@@ -96,7 +192,7 @@ function SortingVisualizer() {
         </div>
 
         <div className="controls">
-          <button onClick={compareCurrentPair} disabled={isSorted}>
+          <button onClick={handleStep} disabled={isSorted}>
             Step
           </button>
           <button onClick={() => setIsRunning(!isRunning)} disabled={isSorted}>
@@ -110,7 +206,10 @@ function SortingVisualizer() {
             <span>Algorithm</span>
             <select
               value={selectedAlgorithm}
-              onChange={(e) => setSelectedAlgorithm(e.target.value)}
+              onChange={(e) => {
+                setSelectedAlgorithm(e.target.value);
+                resetArray();
+              }}
             >
               <option value="bubble">Bubble Sort</option>
               <option value="selection">Selection Sort</option>
@@ -143,13 +242,7 @@ function SortingVisualizer() {
                 className="array-bar"
                 style={{
                   height: `${number * 3}px`,
-                  backgroundColor: isSorted
-                    ? "purple"
-                    : index > sortedBoundary
-                      ? "purple"
-                      : currentlyComparing.includes(index)
-                        ? "green"
-                        : "steelblue",
+                  backgroundColor: getBarColor(index),
                 }}
               ></div>
 
@@ -159,35 +252,47 @@ function SortingVisualizer() {
         </div>
 
         <div className="algorithm-info">
-          <h3>How Bubble Sort Works</h3>
-          <p>
-            Bubble Sort compares two neighboring values. If the left value is
-            bigger than the right value, they swap. After each pass, the largest
-            unsorted value moves to its final position at the end.
-          </p>
+          <h3>{currentAlgorithmInfo.title}</h3>
+          <p>{currentAlgorithmInfo.description}</p>
 
           <div className="complexity-row">
-            <span>Time: O(n²)</span>
-            <span>Space: O(1)</span>
+            <span>Time: {currentAlgorithmInfo.time}</span>
+            <span>Space: {currentAlgorithmInfo.space}</span>
           </div>
         </div>
 
         <div className="color-guide">
-  <div className="guide-item">
-    <div className="guide-color unsorted"></div>
-    <span>Unsorted</span>
-  </div>
+          <div className="guide-item">
+            <div className="guide-color unsorted"></div>
+            <span>Unsorted</span>
+          </div>
 
-  <div className="guide-item">
-    <div className="guide-color comparing"></div>
-    <span>Comparing</span>
-  </div>
+          {selectedAlgorithm === "bubble" && (
+            <div className="guide-item">
+              <div className="guide-color comparing"></div>
+              <span>Comparing</span>
+            </div>
+          )}
 
-  <div className="guide-item">
-    <div className="guide-color sorted"></div>
-    <span>Sorted</span>
-  </div>
-</div>
+          {selectedAlgorithm === "selection" && (
+            <>
+              <div className="guide-item">
+                <div className="guide-color comparing"></div>
+                <span>Being checked</span>
+              </div>
+
+              <div className="guide-item">
+                <div className="guide-color checking"></div>
+                <span>Current minimum</span>
+              </div>
+            </>
+          )}
+
+          <div className="guide-item">
+            <div className="guide-color sorted"></div>
+            <span>Sorted</span>
+          </div>
+        </div>
       </div>
     </section>
   );
