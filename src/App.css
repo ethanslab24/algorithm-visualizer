@@ -257,3 +257,11 @@ h1 {
   background: purple;
 }
 
+.active-insertion {
+  background: green;
+}
+
+.insertion-comparison {
+  background: red;
+}
+

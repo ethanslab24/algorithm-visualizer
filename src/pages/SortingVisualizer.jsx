@@ -1,14 +1,21 @@
 import { useEffect, useState } from "react";
 
 function SortingVisualizer() {
+  const [selectedAlgorithm, setSelectedAlgorithm] = useState("bubble");
+  const [speed, setSpeed] = useState(500);
+  const [isRunning, setIsRunning] = useState(false);
+  //Bubble sort states
   const [currentlyComparing, setCurrentlyComparing] = useState([0, 1]);
   const [isSorted, setIsSorted] = useState(false);
-  const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState(500);
-  const [selectedAlgorithm, setSelectedAlgorithm] = useState("bubble");
+
+  //Selection sort states
   const [minimumIndex, setMinimumIndex] = useState(0);
   const [currentStartIndex, setCurrentStartIndex] = useState(0);
   const [currentIndexBeingChecked, setCurrentIndexBeingChecked] = useState(1);
+
+  //Insertion sort states
+  const [activeIndex, setActiveIndex] = useState(1);
+  const [comparingIndex, setComparingIndex] = useState(0);
 
   function generateRandomArray() {
     const nums = [];
@@ -29,6 +36,10 @@ function SortingVisualizer() {
 
     if (selectedAlgorithm === "selection") {
       selectionSortStep();
+    }
+
+    if (selectedAlgorithm === "insertion") {
+      insertionSortStep();
     }
   }
 
@@ -98,6 +109,30 @@ function SortingVisualizer() {
     }
   }
 
+  function insertionSortStep() {
+    if (isSorted) return;
+
+    if (activeIndex >= array.length) {
+      setIsSorted(true);
+      return;
+    }
+
+    if (comparingIndex >= 0 && array[comparingIndex] > array[activeIndex]) {
+      swap(comparingIndex, activeIndex);
+      setActiveIndex(comparingIndex);
+      setComparingIndex(comparingIndex - 1);
+    } else {
+      const nextActiveIndex = activeIndex + 1;
+
+      if (nextActiveIndex >= array.length) {
+        setIsSorted(true);
+        return;
+      }
+
+      setActiveIndex(nextActiveIndex);
+      setComparingIndex(nextActiveIndex - 1);
+    }
+  }
   function resetArray() {
     const newArray = generateRandomArray();
     setArray(newArray);
@@ -106,6 +141,8 @@ function SortingVisualizer() {
     setCurrentStartIndex(0);
     setMinimumIndex(0);
     setCurrentIndexBeingChecked(1);
+    setComparingIndex(0);
+    setActiveIndex(1);
     setIsRunning(false);
     setIsSorted(false);
   }
@@ -129,6 +166,8 @@ function SortingVisualizer() {
     minimumIndex,
     currentStartIndex,
     currentIndexBeingChecked,
+    activeIndex,
+    comparingIndex,
   ]);
 
   function getBarColor(index) {
@@ -144,6 +183,18 @@ function SortingVisualizer() {
       if (index < currentStartIndex) return "purple";
       if (index === minimumIndex) return "red";
       if (index === currentIndexBeingChecked) return "green";
+      return "steelblue";
+    }
+
+    if (selectedAlgorithm === "insertion") {
+      if (isSorted) return "purple";
+
+      if (index === activeIndex) return "green";
+
+      if (index === comparingIndex) return "red";
+
+      if (index < activeIndex) return "purple";
+
       return "steelblue";
     }
 
@@ -169,9 +220,9 @@ function SortingVisualizer() {
       space: "O(1)",
     },
     insertion: {
-      title: "Insertion Sort Coming Soon",
+      title: "How Insertion Sort Works",
       description:
-        "Insertion Sort will be added next. It builds a sorted section by inserting each value into its correct position.",
+        "Insertion Sort builds a sorted section from left to right. It takes the next value and moves it left until it reaches the correct position.",
       time: "O(n²)",
       space: "O(1)",
     },
@@ -179,12 +230,41 @@ function SortingVisualizer() {
 
   const currentAlgorithmInfo = algorithmDetails[selectedAlgorithm];
 
+  function getStatusText() {
+    if (isSorted) {
+      return "Array Sorted!";
+    }
+
+    if (selectedAlgorithm === "bubble") {
+      const left = array[currentlyComparing[0]];
+      const right = array[currentlyComparing[1]];
+
+      return `Comparing ${left ?? "-"} and ${right ?? "-"}`;
+    }
+
+    if (selectedAlgorithm === "selection") {
+      const minimum = array[minimumIndex];
+      const checking = array[currentIndexBeingChecked];
+
+      return `Current minimum: ${minimum ?? "-"} | Checking: ${checking ?? "-"}`;
+    }
+
+    if (selectedAlgorithm === "insertion") {
+      const active = array[activeIndex];
+      const compared = array[comparingIndex];
+
+      return `Inserting ${active ?? "-"} | Comparing against ${compared ?? "-"}`;
+    }
+
+    return "";
+  }
+
   return (
     <section className="sorting-page">
       <div className="visualizer-card">
         <div className="visualizer-header">
           <div>
-            <h2>Bubble Sort Visualizer</h2>
+            <h2>Algorithm Visualizer</h2>
             <p>Step through comparisons, swaps, and sorted boundaries.</p>
           </div>
 
@@ -229,11 +309,7 @@ function SortingVisualizer() {
           </label>
         </div>
 
-        <div className="status-text">
-          {isSorted
-            ? "Array Sorted!"
-            : `Comparing ${leftValue} and ${rightValue}`}
-        </div>
+        <div className="status-text">{getStatusText()}</div>
 
         <div className="array-container">
           {array.map((number, index) => (
@@ -284,6 +360,20 @@ function SortingVisualizer() {
               <div className="guide-item">
                 <div className="guide-color checking"></div>
                 <span>Current minimum</span>
+              </div>
+            </>
+          )}
+
+          {selectedAlgorithm === "insertion" && (
+            <>
+              <div className="guide-item">
+                <div className="guide-color comparing"></div>
+                <span>Value being inserted</span>
+              </div>
+
+              <div className="guide-item">
+                <div className="guide-color checking"></div>
+                <span>Compared value</span>
               </div>
             </>
           )}
