@@ -5,6 +5,7 @@ function SortingVisualizer() {
   const [currentlyComparing, setCurrentlyComparing] = useState([0, 1]);
   const [sortedBoundary, setSortedBoundary] = useState(array.length - 1);
   const [isSorted, setIsSorted] = useState(false);
+  const startingArray = [5, 3, 8, 1];
 
   function swap(i, j) {
     let newArr = [...array];
@@ -14,34 +15,41 @@ function SortingVisualizer() {
     setArray(newArr);
   }
 
- function nextComparison() {
-  const leftIndex = currentlyComparing[0];
-  const rightIndex = currentlyComparing[1];
+  function nextComparison() {
+    const leftIndex = currentlyComparing[0];
+    const rightIndex = currentlyComparing[1];
 
-  if (rightIndex === sortedBoundary) {
-    const newBoundary = sortedBoundary - 1;
+    if (rightIndex === sortedBoundary) {
+      const newBoundary = sortedBoundary - 1;
 
-    setSortedBoundary(newBoundary);
-    setCurrentlyComparing([0, 1]);
+      setSortedBoundary(newBoundary);
+      setCurrentlyComparing([0, 1]);
 
-    if (newBoundary === 0) {
-      setIsSorted(true);
+      if (newBoundary === 0) {
+        setIsSorted(true);
+      }
+    } else {
+      setCurrentlyComparing([leftIndex + 1, rightIndex + 1]);
     }
-  } else {
-    setCurrentlyComparing([leftIndex + 1, rightIndex + 1]);
   }
-}
 
   function compareCurrentPair() {
     const leftIndex = currentlyComparing[0];
     const rightIndex = currentlyComparing[1];
 
     if (isSorted) return;
-    
+
     if (array[currentlyComparing[0]] > array[currentlyComparing[1]]) {
       swap(leftIndex, rightIndex);
     }
     nextComparison();
+  }
+
+  function resetArray() {
+    setArray(startingArray);
+    setCurrentlyComparing([0, 1]);
+    setSortedBoundary(startingArray.length - 1);
+    setIsSorted(false);
   }
   return (
     <>
@@ -62,7 +70,8 @@ function SortingVisualizer() {
             <div>{number}</div>
           </div>
         ))}
-        <button onClick={() => compareCurrentPair()}>Sort Button</button>
+        <button onClick={() => compareCurrentPair()}>Bubble Sort Button</button>
+        <button onClick={() => resetArray()}>Reset</button>
       </div>
     </>
   );
