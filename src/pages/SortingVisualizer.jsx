@@ -17,6 +17,10 @@ function SortingVisualizer() {
   const [activeIndex, setActiveIndex] = useState(1);
   const [comparingIndex, setComparingIndex] = useState(0);
 
+  //merge sort visualizer
+  const [mergeSteps, setMergeSteps] = useState([]);
+  const [currentMergeStep, setCurrentMergeStep] = useState(0);
+
   function generateRandomArray() {
     const nums = [];
 
@@ -40,6 +44,14 @@ function SortingVisualizer() {
 
     if (selectedAlgorithm === "insertion") {
       insertionSortStep();
+    }
+
+    if (selectedAlgorithm === "merge") {
+      if (currentMergeStep < mergeSteps.length - 1) {
+        setCurrentMergeStep(currentMergeStep + 1);
+      } else {
+        setIsSorted(true);
+      }
     }
   }
 
@@ -135,6 +147,7 @@ function SortingVisualizer() {
   }
   function resetArray() {
     const newArray = generateRandomArray();
+
     setArray(newArray);
     setSortedBoundary(newArray.length - 1);
     setCurrentlyComparing([0, 1]);
@@ -143,8 +156,15 @@ function SortingVisualizer() {
     setCurrentIndexBeingChecked(1);
     setComparingIndex(0);
     setActiveIndex(1);
+    setCurrentMergeStep(0);
     setIsRunning(false);
     setIsSorted(false);
+
+    if (selectedAlgorithm === "merge") {
+      setMergeSteps(generateMergeSteps(newArray));
+    } else {
+      setMergeSteps([]);
+    }
   }
 
   useEffect(() => {
@@ -168,6 +188,8 @@ function SortingVisualizer() {
     currentIndexBeingChecked,
     activeIndex,
     comparingIndex,
+    mergeSteps,
+    currentMergeStep,
   ]);
 
   function getBarColor(index) {
@@ -226,9 +248,61 @@ function SortingVisualizer() {
       time: "O(n²)",
       space: "O(1)",
     },
+    merge: {
+      title: "How Merge Sort Works",
+      description:
+        "Merge Sort splits the array into smaller halves until each group has one value. Then it merges the groups back together in sorted order.",
+      time: "O(n log n)",
+      space: "O(n)",
+    },
   };
 
   const currentAlgorithmInfo = algorithmDetails[selectedAlgorithm];
+
+  function mergeSort(array) {
+    if (array.length <= 1) {
+      return array;
+    }
+
+    const mid = Math.floor(array.length / 2);
+
+    const left = array.slice(0, mid);
+    const right = array.slice(mid);
+
+    const sortedLeft = mergeSort(left);
+    const sortedRight = mergeSort(right);
+
+    return merge(sortedLeft, sortedRight);
+  }
+
+  function merge(left, right) {
+    const merged = [];
+
+    let leftIndex = 0;
+    let rightIndex = 0;
+
+    while (leftIndex < left.length && rightIndex < right.length) {
+      if (left[leftIndex] < right[rightIndex]) {
+        merged.push(left[leftIndex]);
+        leftIndex++;
+      } else {
+        merged.push(right[rightIndex]);
+        rightIndex++;
+      }
+    }
+
+    while (leftIndex < left.length) {
+      merged.push(left[leftIndex]);
+      leftIndex++;
+    }
+
+    while (rightIndex < right.length) {
+      merged.push(right[rightIndex]);
+      rightIndex++;
+    }
+
+    return merged;
+  }
 
   function getStatusText() {
     if (isSorted) {
@@ -259,6 +333,61 @@ function SortingVisualizer() {
     return "";
   }
 
+  function generateMergeSteps(array) {
+    const steps = [];
+
+    steps.push([array]);
+
+    function splitLevel(groups) {
+      const nextGroups = [];
+
+      let didSplit = false;
+
+      for (const group of groups) {
+        if (group.length <= 1) {
+          nextGroups.push(group);
+        } else {
+          const mid = Math.floor(group.length / 2);
+          const left = group.slice(0, mid);
+          const right = group.slice(mid);
+
+          nextGroups.push(left);
+          nextGroups.push(right);
+          didSplit = true;
+        }
+      }
+
+      if (didSplit) {
+        steps.push(nextGroups);
+        splitLevel(nextGroups);
+      }
+    }
+
+    splitLevel([array]);
+
+    function mergeLevel(groups) {
+      if (groups.length === 1) return;
+
+      const nextGroups = [];
+
+      for (let i = 0; i < groups.length; i += 2) {
+        if (i + 1 < groups.length) {
+          nextGroups.push(merge(groups[i], groups[i + 1]));
+        } else {
+          nextGroups.push(groups[i]);
+        }
+      }
+
+      steps.push(nextGroups);
+      mergeLevel(nextGroups);
+    }
+
+    const smallestGroups = steps[steps.length - 1];
+    mergeLevel(smallestGroups);
+
+    return steps;
+  }
+
   return (
     <section className="sorting-page">
       <div className="visualizer-card">
@@ -287,13 +416,22 @@ function SortingVisualizer() {
             <select
               value={selectedAlgorithm}
               onChange={(e) => {
-                setSelectedAlgorithm(e.target.value);
+                const algorithm = e.target.value;
+                setSelectedAlgorithm(algorithm);
                 resetArray();
+
+                if (algorithm === "merge") {
+                  const newArray = generateRandomArray();
+                  setArray(newArray);
+                  setMergeSteps(generateMergeSteps(newArray));
+                  setCurrentMergeStep(0);
+                }
               }}
             >
               <option value="bubble">Bubble Sort</option>
               <option value="selection">Selection Sort</option>
               <option value="insertion">Insertion Sort</option>
+              <option value="merge">Merge Sort</option>
             </select>
           </label>
 
@@ -312,19 +450,33 @@ function SortingVisualizer() {
         <div className="status-text">{getStatusText()}</div>
 
         <div className="array-container">
-          {array.map((number, index) => (
-            <div className="bar-group" key={index}>
-              <div
-                className="array-bar"
-                style={{
-                  height: `${number * 3}px`,
-                  backgroundColor: getBarColor(index),
-                }}
-              ></div>
-
-              <div className="bar-value">{number}</div>
+          {selectedAlgorithm === "merge" && mergeSteps.length > 0 ? (
+            <div className="merge-groups">
+              {mergeSteps[currentMergeStep].map((group, groupIndex) => (
+                <div className="merge-group" key={groupIndex}>
+                  {group.map((number, index) => (
+                    <div className="merge-value" key={index}>
+                      {number}
+                    </div>
+                  ))}
+                </div>
+              ))}
             </div>
-          ))}
+          ) : (
+            array.map((number, index) => (
+              <div className="bar-group" key={index}>
+                <div
+                  className="array-bar"
+                  style={{
+                    height: `${number * 3}px`,
+                    backgroundColor: getBarColor(index),
+                  }}
+                ></div>
+
+                <div className="bar-value">{number}</div>
+              </div>
+            ))
+          )}
         </div>
 
         <div className="algorithm-info">
@@ -337,52 +489,61 @@ function SortingVisualizer() {
           </div>
         </div>
 
-        <div className="color-guide">
-          <div className="guide-item">
-            <div className="guide-color unsorted"></div>
-            <span>Unsorted</span>
-          </div>
-
-          {selectedAlgorithm === "bubble" && (
+        {selectedAlgorithm !== "merge" && (
+          <div className="color-guide">
             <div className="guide-item">
-              <div className="guide-color comparing"></div>
-              <span>Comparing</span>
+              <div className="guide-color unsorted"></div>
+              <span>Unsorted</span>
             </div>
-          )}
 
-          {selectedAlgorithm === "selection" && (
-            <>
+            {selectedAlgorithm === "bubble" && (
               <div className="guide-item">
                 <div className="guide-color comparing"></div>
-                <span>Being checked</span>
+                <span>Comparing</span>
               </div>
+            )}
 
-              <div className="guide-item">
-                <div className="guide-color checking"></div>
-                <span>Current minimum</span>
-              </div>
-            </>
-          )}
+            {selectedAlgorithm === "selection" && (
+              <>
+                <div className="guide-item">
+                  <div className="guide-color comparing"></div>
+                  <span>Being checked</span>
+                </div>
 
-          {selectedAlgorithm === "insertion" && (
-            <>
-              <div className="guide-item">
-                <div className="guide-color comparing"></div>
-                <span>Value being inserted</span>
-              </div>
+                <div className="guide-item">
+                  <div className="guide-color checking"></div>
+                  <span>Current minimum</span>
+                </div>
+              </>
+            )}
 
-              <div className="guide-item">
-                <div className="guide-color checking"></div>
-                <span>Compared value</span>
-              </div>
-            </>
-          )}
+            {selectedAlgorithm === "insertion" && (
+              <>
+                <div className="guide-item">
+                  <div className="guide-color comparing"></div>
+                  <span>Value being inserted</span>
+                </div>
 
-          <div className="guide-item">
-            <div className="guide-color sorted"></div>
-            <span>Sorted</span>
+                <div className="guide-item">
+                  <div className="guide-color checking"></div>
+                  <span>Compared value</span>
+                </div>
+              </>
+            )}
+
+            <div className="guide-item">
+              <div className="guide-color sorted"></div>
+              <span>Sorted</span>
+            </div>
           </div>
-        </div>
+        )}
+        {selectedAlgorithm === "merge" && (
+          <div className="color-guide">
+            <div className="guide-item">
+              <span>Each box shows one split or merged group.</span>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
