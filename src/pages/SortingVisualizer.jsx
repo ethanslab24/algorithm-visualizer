@@ -4,21 +4,17 @@ function SortingVisualizer() {
   const [selectedAlgorithm, setSelectedAlgorithm] = useState("bubble");
   const [speed, setSpeed] = useState(500);
   const [isRunning, setIsRunning] = useState(false);
-  //Bubble sort states
-  const [currentlyComparing, setCurrentlyComparing] = useState([0, 1]);
   const [isSorted, setIsSorted] = useState(false);
 
-  //Selection sort states
+  const [currentlyComparing, setCurrentlyComparing] = useState([0, 1]);
+
   const [minimumIndex, setMinimumIndex] = useState(0);
   const [currentStartIndex, setCurrentStartIndex] = useState(0);
   const [currentIndexBeingChecked, setCurrentIndexBeingChecked] = useState(1);
 
-  //Insertion sort states
   const [activeIndex, setActiveIndex] = useState(1);
   const [comparingIndex, setComparingIndex] = useState(0);
-  const [insertionSortedBoundary, setInsertionSortedBoundary] = useState(1);
 
-  //merge sort visualizer
   const [mergeSteps, setMergeSteps] = useState([]);
   const [currentMergeStep, setCurrentMergeStep] = useState(0);
 
@@ -26,50 +22,34 @@ function SortingVisualizer() {
     const nums = [];
 
     for (let i = 0; i < 10; i++) {
-      let randomNumber = Math.floor(Math.random() * 100) + 1;
-
-      nums.push(randomNumber);
+      nums.push(Math.floor(Math.random() * 100) + 1);
     }
 
     return nums;
-  }
-
-  function handleStep() {
-    if (selectedAlgorithm === "bubble") {
-      bubbleSortStep();
-    }
-
-    if (selectedAlgorithm === "selection") {
-      selectionSortStep();
-    }
-
-    if (selectedAlgorithm === "insertion") {
-      insertionSortStep();
-    }
-
-    if (selectedAlgorithm === "merge") {
-      if (currentMergeStep < mergeSteps.length - 1) {
-        setCurrentMergeStep(currentMergeStep + 1);
-      } else {
-        setIsSorted(true);
-      }
-    }
   }
 
   const [array, setArray] = useState(generateRandomArray());
   const [sortedBoundary, setSortedBoundary] = useState(array.length - 1);
 
   function swap(i, j) {
-    let newArr = [...array];
-    let temp = newArr[i];
+    const newArr = [...array];
+    const temp = newArr[i];
+
     newArr[i] = newArr[j];
     newArr[j] = temp;
+
     setArray(newArr);
   }
 
-  function nextComparison() {
+  function bubbleSortStep() {
+    if (isSorted) return;
+
     const leftIndex = currentlyComparing[0];
     const rightIndex = currentlyComparing[1];
+
+    if (array[leftIndex] > array[rightIndex]) {
+      swap(leftIndex, rightIndex);
+    }
 
     if (rightIndex === sortedBoundary) {
       const newBoundary = sortedBoundary - 1;
@@ -83,19 +63,6 @@ function SortingVisualizer() {
     } else {
       setCurrentlyComparing([leftIndex + 1, rightIndex + 1]);
     }
-  }
-
-  function bubbleSortStep() {
-    const leftIndex = currentlyComparing[0];
-    const rightIndex = currentlyComparing[1];
-
-    if (isSorted) return;
-
-    if (array[currentlyComparing[0]] > array[currentlyComparing[1]]) {
-      swap(leftIndex, rightIndex);
-    }
-
-    nextComparison();
   }
 
   function selectionSortStep() {
@@ -144,134 +111,29 @@ function SortingVisualizer() {
 
       setActiveIndex(nextActiveIndex);
       setComparingIndex(nextActiveIndex - 1);
-      setInsertionSortedBoundary(nextActiveIndex);
-    }
-  }
-  function resetArray() {
-    const newArray = generateRandomArray();
-
-    setArray(newArray);
-    setSortedBoundary(newArray.length - 1);
-    setCurrentlyComparing([0, 1]);
-    setCurrentStartIndex(0);
-    setMinimumIndex(0);
-    setCurrentIndexBeingChecked(1);
-    setComparingIndex(0);
-    setInsertionSortedBoundary(1);
-    setActiveIndex(1);
-    setCurrentMergeStep(0);
-    setIsRunning(false);
-    setIsSorted(false);
-
-    if (selectedAlgorithm === "merge") {
-      setMergeSteps(generateMergeSteps(newArray));
-    } else {
-      setMergeSteps([]);
     }
   }
 
-  useEffect(() => {
-    if (!isRunning || isSorted) return;
-    const delay = 1100 - speed * 100;
-    const intervalId = setInterval(() => {
-      handleStep();
-    }, delay);
-
-    return () => clearInterval(intervalId);
-  }, [
-    isRunning,
-    isSorted,
-    array,
-    currentlyComparing,
-    sortedBoundary,
-    speed,
-    selectedAlgorithm,
-    minimumIndex,
-    currentStartIndex,
-    currentIndexBeingChecked,
-    activeIndex,
-    comparingIndex,
-    insertionSortedBoundary,
-    mergeSteps,
-    currentMergeStep,
-  ]);
-
-  function getBarColor(index) {
-    if (isSorted) return "purple";
-
+  function handleStep() {
     if (selectedAlgorithm === "bubble") {
-      if (index > sortedBoundary) return "purple";
-      if (currentlyComparing.includes(index)) return "green";
-      return "steelblue";
+      bubbleSortStep();
     }
 
     if (selectedAlgorithm === "selection") {
-      if (index < currentStartIndex) return "purple";
-      if (index === minimumIndex) return "red";
-      if (index === currentIndexBeingChecked) return "green";
-      return "steelblue";
+      selectionSortStep();
     }
 
     if (selectedAlgorithm === "insertion") {
-      if (index === activeIndex) return "green";
-      if (index === comparingIndex) return "red";
-      if (index <= insertionSortedBoundary) return "purple";
-      return "steelblue";
+      insertionSortStep();
     }
 
-    return "steelblue";
-  }
-
-  const leftValue = array[currentlyComparing[0]];
-  const rightValue = array[currentlyComparing[1]];
-
-  const algorithmDetails = {
-    bubble: {
-      title: "How Bubble Sort Works",
-      description:
-        "Bubble Sort compares neighboring values. If the left value is bigger than the right value, they swap. After each pass, the largest unsorted value moves to its final position at the end.",
-      time: "O(n²)",
-      space: "O(1)",
-    },
-    selection: {
-      title: "How Selection Sort Works",
-      description:
-        "Selection Sort searches the unsorted section for the smallest value. After finding it, the algorithm swaps it into the first unsorted position. Then the sorted section grows from left to right.",
-      time: "O(n²)",
-      space: "O(1)",
-    },
-    insertion: {
-      title: "How Insertion Sort Works",
-      description:
-        "Insertion Sort builds a sorted section from left to right. It takes the next value and moves it left until it reaches the correct position.",
-      time: "O(n²)",
-      space: "O(1)",
-    },
-    merge: {
-      title: "How Merge Sort Works",
-      description:
-        "Merge Sort splits the array into smaller halves until each group has one value. Then it merges the groups back together in sorted order.",
-      time: "O(n log n)",
-      space: "O(n)",
-    },
-  };
-
-  const currentAlgorithmInfo = algorithmDetails[selectedAlgorithm];
-
-  function mergeSort(array) {
-    if (array.length <= 1) {
-      return array;
+    if (selectedAlgorithm === "merge") {
+      if (currentMergeStep < mergeSteps.length - 1) {
+        setCurrentMergeStep(currentMergeStep + 1);
+      } else {
+        setIsSorted(true);
+      }
     }
-
-    const mid = Math.floor(array.length / 2);
-
-    const left = array.slice(0, mid);
-    const right = array.slice(mid);
-
-    const sortedLeft = mergeSort(left);
-    const sortedRight = mergeSort(right);
-
-    return merge(sortedLeft, sortedRight);
   }
 
   function merge(left, right) {
@@ -303,49 +165,6 @@ function SortingVisualizer() {
     return merged;
   }
 
-  function getStatusText() {
-    if (isSorted) {
-      return "Array Sorted!";
-    }
-
-    if (selectedAlgorithm === "bubble") {
-      const left = array[currentlyComparing[0]];
-      const right = array[currentlyComparing[1]];
-
-      return `Comparing ${left ?? "-"} and ${right ?? "-"}`;
-    }
-
-    if (selectedAlgorithm === "selection") {
-      const minimum = array[minimumIndex];
-      const checking = array[currentIndexBeingChecked];
-
-      return `Current minimum: ${minimum ?? "-"} | Checking: ${checking ?? "-"}`;
-    }
-
-    if (selectedAlgorithm === "insertion") {
-      const active = array[activeIndex];
-      const compared = array[comparingIndex];
-
-      return `Inserting ${active ?? "-"} | Comparing against ${compared ?? "-"}`;
-    }
-
-    if (selectedAlgorithm === "merge") {
-      if (mergeSteps.length === 0) {
-        return "Ready to begin Merge Sort";
-      }
-
-      const halfway = Math.ceil(mergeSteps.length / 2);
-
-      if (currentMergeStep < halfway) {
-        return `Splitting arrays`;
-      }
-
-      return `Merging arrays`;
-    }
-
-    return "";
-  }
-
   function generateMergeSteps(array) {
     const steps = [];
 
@@ -353,7 +172,6 @@ function SortingVisualizer() {
 
     function splitLevel(groups) {
       const nextGroups = [];
-
       let didSplit = false;
 
       for (const group of groups) {
@@ -401,6 +219,164 @@ function SortingVisualizer() {
     return steps;
   }
 
+  function resetArrayForAlgorithm(algorithm) {
+    const newArray = generateRandomArray();
+
+    setArray(newArray);
+    setSortedBoundary(newArray.length - 1);
+    setCurrentlyComparing([0, 1]);
+
+    setCurrentStartIndex(0);
+    setMinimumIndex(0);
+    setCurrentIndexBeingChecked(1);
+
+    setActiveIndex(1);
+    setComparingIndex(0);
+
+    setCurrentMergeStep(0);
+    setIsRunning(false);
+    setIsSorted(false);
+
+    if (algorithm === "merge") {
+      setMergeSteps(generateMergeSteps(newArray));
+    } else {
+      setMergeSteps([]);
+    }
+  }
+
+  function resetArray() {
+    resetArrayForAlgorithm(selectedAlgorithm);
+  }
+
+  useEffect(() => {
+    if (!isRunning || isSorted) return;
+
+    const delay = 1100 - speed * 100;
+
+    const intervalId = setInterval(() => {
+      handleStep();
+    }, delay);
+
+    return () => clearInterval(intervalId);
+  }, [
+    isRunning,
+    isSorted,
+    array,
+    currentlyComparing,
+    sortedBoundary,
+    speed,
+    selectedAlgorithm,
+    minimumIndex,
+    currentStartIndex,
+    currentIndexBeingChecked,
+    activeIndex,
+    comparingIndex,
+    mergeSteps,
+    currentMergeStep,
+  ]);
+
+  function getBarColor(index) {
+    if (isSorted) return "purple";
+
+    if (selectedAlgorithm === "bubble") {
+      if (index > sortedBoundary) return "purple";
+      if (currentlyComparing.includes(index)) return "green";
+      return "steelblue";
+    }
+
+    if (selectedAlgorithm === "selection") {
+      if (index < currentStartIndex) return "purple";
+      if (index === minimumIndex) return "red";
+      if (index === currentIndexBeingChecked) return "green";
+      return "steelblue";
+    }
+
+    if (selectedAlgorithm === "insertion") {
+      if (index === activeIndex) return "green";
+      if (index === comparingIndex) return "red";
+      if (index < activeIndex) return "purple";
+      return "steelblue";
+    }
+
+    return "steelblue";
+  }
+
+  function getStatusText() {
+    if (isSorted) {
+      return "Array Sorted!";
+    }
+
+    if (selectedAlgorithm === "bubble") {
+      const left = array[currentlyComparing[0]];
+      const right = array[currentlyComparing[1]];
+
+      return `Comparing ${left ?? "-"} and ${right ?? "-"}`;
+    }
+
+    if (selectedAlgorithm === "selection") {
+      const minimum = array[minimumIndex];
+      const checking = array[currentIndexBeingChecked];
+
+      return `Current minimum: ${minimum ?? "-"} | Checking: ${checking ?? "-"}`;
+    }
+
+    if (selectedAlgorithm === "insertion") {
+      const active = array[activeIndex];
+      const compared = array[comparingIndex];
+
+      return `Inserting ${active ?? "-"} | Comparing against ${compared ?? "-"}`;
+    }
+
+    if (selectedAlgorithm === "merge") {
+      if (mergeSteps.length === 0) {
+        return "Ready to begin Merge Sort";
+      }
+
+      const halfway = Math.ceil(mergeSteps.length / 2);
+
+      if (currentMergeStep < halfway) {
+        return "Splitting arrays";
+      }
+
+      return "Merging arrays";
+    }
+
+    return "";
+  }
+
+  const algorithmDetails = {
+    bubble: {
+      title: "How Bubble Sort Works",
+      description:
+        "Bubble Sort compares neighboring values. If the left value is bigger than the right value, they swap. After each pass, the largest unsorted value moves to its final position at the end.",
+      time: "O(n²)",
+      space: "O(1)",
+    },
+    selection: {
+      title: "How Selection Sort Works",
+      description:
+        "Selection Sort searches the unsorted section for the smallest value. After finding it, the algorithm swaps it into the first unsorted position. Then the sorted section grows from left to right.",
+      time: "O(n²)",
+      space: "O(1)",
+    },
+    insertion: {
+      title: "How Insertion Sort Works",
+      description:
+        "Insertion Sort builds a sorted section from left to right. It takes the next value and moves it left until it reaches the correct position.",
+      time: "O(n²)",
+      space: "O(1)",
+    },
+    merge: {
+      title: "How Merge Sort Works",
+      description:
+        "Merge Sort splits the array into smaller halves until each group has one value. Then it merges the groups back together in sorted order.",
+      time: "O(n log n)",
+      space: "O(n)",
+    },
+  };
+
+  const currentAlgorithmInfo = algorithmDetails[selectedAlgorithm];
+
   return (
     <section className="sorting-page">
       <div className="visualizer-card">
@@ -434,14 +410,7 @@ function SortingVisualizer() {
               onChange={(e) => {
                 const algorithm = e.target.value;
                 setSelectedAlgorithm(algorithm);
-                resetArray();
-
-                if (algorithm === "merge") {
-                  const newArray = generateRandomArray();
-                  setArray(newArray);
-                  setMergeSteps(generateMergeSteps(newArray));
-                  setCurrentMergeStep(0);
-                }
+                resetArrayForAlgorithm(algorithm);
               }}
             >
               <option value="bubble">Bubble Sort</option>
@@ -553,6 +522,7 @@ function SortingVisualizer() {
             </div>
           </div>
         )}
+
         {selectedAlgorithm === "merge" && (
           <div className="color-guide">
             <div className="guide-item">
