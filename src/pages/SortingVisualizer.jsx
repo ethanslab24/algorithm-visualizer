@@ -16,6 +16,7 @@ function SortingVisualizer() {
   //Insertion sort states
   const [activeIndex, setActiveIndex] = useState(1);
   const [comparingIndex, setComparingIndex] = useState(0);
+  const [insertionSortedBoundary, setInsertionSortedBoundary] = useState(1);
 
   //merge sort visualizer
   const [mergeSteps, setMergeSteps] = useState([]);
@@ -143,6 +144,7 @@ function SortingVisualizer() {
 
       setActiveIndex(nextActiveIndex);
       setComparingIndex(nextActiveIndex - 1);
+      setInsertionSortedBoundary(nextActiveIndex);
     }
   }
   function resetArray() {
@@ -155,6 +157,7 @@ function SortingVisualizer() {
     setMinimumIndex(0);
     setCurrentIndexBeingChecked(1);
     setComparingIndex(0);
+    setInsertionSortedBoundary(1);
     setActiveIndex(1);
     setCurrentMergeStep(0);
     setIsRunning(false);
@@ -188,6 +191,7 @@ function SortingVisualizer() {
     currentIndexBeingChecked,
     activeIndex,
     comparingIndex,
+    insertionSortedBoundary,
     mergeSteps,
     currentMergeStep,
   ]);
@@ -209,14 +213,9 @@ function SortingVisualizer() {
     }
 
     if (selectedAlgorithm === "insertion") {
-      if (isSorted) return "purple";
-
       if (index === activeIndex) return "green";
-
       if (index === comparingIndex) return "red";
-
-      if (index < activeIndex) return "purple";
-
+      if (index <= insertionSortedBoundary) return "purple";
       return "steelblue";
     }
 
