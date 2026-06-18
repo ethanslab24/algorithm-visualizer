@@ -330,6 +330,20 @@ function SortingVisualizer() {
       return `Inserting ${active ?? "-"} | Comparing against ${compared ?? "-"}`;
     }
 
+    if (selectedAlgorithm === "merge") {
+      if (mergeSteps.length === 0) {
+        return "Ready to begin Merge Sort";
+      }
+
+      const halfway = Math.ceil(mergeSteps.length / 2);
+
+      if (currentMergeStep < halfway) {
+        return `Splitting arrays`;
+      }
+
+      return `Merging arrays`;
+    }
+
     return "";
   }
 
@@ -394,7 +408,10 @@ function SortingVisualizer() {
         <div className="visualizer-header">
           <div>
             <h2>Algorithm Visualizer</h2>
-            <p>Step through comparisons, swaps, and sorted boundaries.</p>
+            <p>
+              Visualize how different sorting algorithms organize data step by
+              step.
+            </p>
           </div>
 
           <div className="status-pill">{isSorted ? "Sorted" : "Sorting"}</div>
